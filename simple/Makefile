@@ -1,19 +1,19 @@
 # Makefile
 
-CC	 = icc
-CFLAGS   = -Wall -O3 -mkl
+CC	 = fccpx
+CFLAGS   = -Kfast,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta
 LDFLAGS  = $(CFLAGS)
 LDLIBS   =
 INCLUDES = 
 SRC      = simple_bench.c
 OBJS     = simple_bench.o
-PROG     = simple_bench_icc.out
+PROG     = simple_bench_fcc.out
 
 
 all: $(PROG)
 
 $(PROG): $(OBJS)
-	$(CC) -o $@ $(OBJS) $(LDLIBS) $(LDFLAGS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
 
 asm: $(INCLUDES) $(SRC)
 	$(CC) -S $(CFLAGS) $(SRC)
