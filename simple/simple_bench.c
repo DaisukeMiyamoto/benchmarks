@@ -3,8 +3,8 @@
 #include <math.h>
 #include <time.h>
 
-#define CALC_LOOP 1000
-#define DATA_SIZE 1000000
+#define CALC_LOOP 1
+#define DATA_SIZE 30000000
 
 int a_i[DATA_SIZE], b_i[DATA_SIZE], c_i[DATA_SIZE];
 float a_f[DATA_SIZE], b_f[DATA_SIZE], c_f[DATA_SIZE];
