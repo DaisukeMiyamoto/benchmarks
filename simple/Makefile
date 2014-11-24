@@ -1,0 +1,25 @@
+# Makefile
+
+#CC       = gcc
+CC	 = icc
+CFLAGS   = -Wall -O3 -mkl
+LDFLAGS  = $(CFLAGS)
+LDLIBS   =
+INCLUDES = 
+SRC      = simple_bench.c
+OBJS     = simple_bench.o
+PROG     = simple_bench.out
+
+
+all: $(PROG)
+
+$(PROG): $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LDLIBS) $(LDFLAGS)
+
+*.o : $(INCLUDES) $(SRC)
+
+.c.o:
+
+clean:
+	rm -fv $(OBJ) $(PROG) *~ *.o *.s
+
