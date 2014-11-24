@@ -15,6 +15,10 @@ all: $(PROG)
 $(PROG): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDLIBS) $(LDFLAGS)
 
+asm: $(INCLUDES) $(SRC)
+	$(CC) -S $(CFLAGS) $(SRC)
+
+
 *.o : $(INCLUDES) $(SRC)
 
 .c.o:

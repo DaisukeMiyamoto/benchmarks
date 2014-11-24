@@ -236,7 +236,7 @@ double get_mflops(double t, int n)
 }
 
 /***************************** main ******************************/
-int main()
+int main(int argc, char** argv)
 {
   clock_t t_start;
   double time_add_int,    time_mul_int,    time_div_int;
@@ -248,6 +248,7 @@ int main()
 
   printf("/********************** SIMPLE BECHMARKS ***********************/\n");
   printf("                                           by nebula 20141124  \n\n");
+  printf("[%s]\n", argv[0]);
   printf("calc num = %d * %d = %d\n", CALC_LOOP, DATA_SIZE, CALC_LOOP*DATA_SIZE);
 
   // int
