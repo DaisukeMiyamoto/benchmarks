@@ -48,6 +48,7 @@ void set_value_int()
   for(i=0; i<DATA_SIZE; i++){
     a_i[i] = rand() >> 2;
     b_i[i] = rand() >> 2;
+    c_i[i] = 0;
   }
   return;
 }
@@ -58,6 +59,7 @@ void set_value_float()
   for(i=0; i<DATA_SIZE; i++){
     a_f[i] = rand() / (float)RAND_MAX;
     b_f[i] = rand() / (float)RAND_MAX;
+    c_f[i] = 0.f;
     ex_f[i] = rand() / (float)RAND_MAX;
   }
   return;
@@ -69,6 +71,7 @@ void set_value_double()
   for(i=0; i<DATA_SIZE; i++){
     a_d[i] = rand() / (double)RAND_MAX;
     b_d[i] = rand() / (double)RAND_MAX;
+    c_d[i] = 0.;
     ex_d[i] = rand() / (double)RAND_MAX;
   }
   return;
@@ -247,11 +250,8 @@ int main()
   printf("                                           by nebula 20141124  \n\n");
   printf("calc num = %d * %d = %d\n", CALC_LOOP, DATA_SIZE, CALC_LOOP*DATA_SIZE);
 
-  set_value_int();
-  set_value_float();
-  set_value_double();
-
   // int
+  set_value_int();
   calc_add_int();
 
   t_start = clock();
@@ -269,24 +269,34 @@ int main()
 
 
   // float
+  set_value_float();
   calc_add_float();
 
+  set_value_float();
   t_start = clock();
   calc_add_float();
   time_add_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
   printf("add(float)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_add_float, get_mflops(time_add_float, 1));
+
+  set_value_float();
   t_start = clock();
   calc_mul_float();
   time_mul_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
   printf("mul(float)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_mul_float, get_mflops(time_mul_float, 1));
+
+  set_value_float();
   t_start = clock();
   calc_div_float();
   time_div_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
   printf("div(float)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_div_float, get_mflops(time_div_float, 1));
+
+  set_value_float();
   t_start = clock();
   calc_mul_add_float();
   time_mul_add_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
   printf("mul+add(float)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_mul_add_float, get_mflops(time_mul_add_float, 2));
+
+  set_value_float();
   t_start = clock();
   calc_exp_float();
   time_exp_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
@@ -294,24 +304,34 @@ int main()
 
 
   // double
+  set_value_double();
   calc_add_double();
 
+  set_value_double();
   t_start = clock();
   calc_add_double();
   time_add_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
   printf("add(double)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_add_double, get_mflops(time_add_double, 1));
+
+  set_value_double();
   t_start = clock();
   calc_mul_double();
   time_mul_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
   printf("mul(double)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_mul_double, get_mflops(time_mul_double, 1));
+
+  set_value_double();
   t_start = clock();
   calc_div_double();
   time_div_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
   printf("div(double)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_div_double, get_mflops(time_div_double, 1));
+
+  set_value_double();
   t_start = clock();
   calc_mul_add_double();
   time_mul_add_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
   printf("mul+add(double)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_mul_add_double, get_mflops(time_mul_add_double, 2));
+
+  set_value_double();
   t_start = clock();
   calc_exp_double();
   time_exp_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
