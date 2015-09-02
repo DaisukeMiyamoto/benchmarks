@@ -9,6 +9,8 @@
 #define START_PROF(x, y) (fapp_start(x, y, 1))
 #define STOP_PROF(x, y)  (fapp_stop(x, y, 1))
 #else
+#define START_PROF(x, y)
+#define STOP_PROF(x, y)
 #endif
 
 
@@ -282,7 +284,7 @@ void calc_cmp_float()
 
 double get_mflops(double t, int n)
 {
-  return(n * CALC_LOOP*DATA_SIZE/t*1000./1000./1000.);
+    return(n * (double)CALC_LOOP*(double)DATA_SIZE/t*1000./1000./1000.);
 }
 
 /***************************** main ******************************/
