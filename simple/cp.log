@@ -1,0 +1,532 @@
+fccpx -Kfast,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta   -c -o simple_bench.o simple_bench.c
+Fujitsu C/C++ Version 1.2.0   Mon Nov 24 16:53:26 2014
+Compilation information
+  Current directory : /volume1/home/hp120263/k00634/benchmarks/simple
+  Source file       : simple_bench.c
+(line-no.)(optimize)
+        1             #include <stdio.h>
+        2             #include <stdlib.h>
+        3             #include <math.h>
+        4             #include <time.h>
+        5             
+        6             #ifdef KCOMPUTER
+        7             #include <fjcoll.h>
+        8             #include <fj_tool/fapp.h>
+        9             #define START_PROF(x, y) (fapp_start(x, y, 1))
+       10             #define STOP_PROF(x, y)  (fapp_stop(x, y, 1))
+       11             #else
+       12             #endif
+       13             
+       14             
+       15             #define CALC_LOOP 1
+       16             #define DATA_SIZE 30000000
+       17             
+       18             int a_i[DATA_SIZE], b_i[DATA_SIZE], c_i[DATA_SIZE];
+       19             float a_f[DATA_SIZE], b_f[DATA_SIZE], c_f[DATA_SIZE];
+       20             double a_d[DATA_SIZE], b_d[DATA_SIZE], c_d[DATA_SIZE];
+       21             
+       22             float ex_f[DATA_SIZE];
+       23             double ex_d[DATA_SIZE];
+       24             
+       25             /**************************** print ******************************/
+       26             void print_value_int()
+       27             {
+       28               int i;
+       29         8     for(i=0; i<DATA_SIZE; i++){
+       30         8       printf("%d %d : %d\n", a_i[i], b_i[i], c_i[i]);
+       31         8     }
+       32               return;
+       33             }
+       34             
+       35             void print_value_float()
+       36             {
+       37               int i;
+       38         6     for(i=0; i<DATA_SIZE; i++){
+       39         6       printf("%f %f : %f\n", a_f[i], b_f[i], c_f[i]);
+       40         6     }
+       41               return;
+       42             }
+       43             
+       44             void print_value_double()
+       45             {
+       46               int i;
+       47         8     for(i=0; i<DATA_SIZE; i++){
+       48         8       printf("%f %f : %f\n", a_d[i], b_d[i], c_d[i]);
+       49         8     }
+       50               return;
+       51             }
+       52             
+       53             /***************************** init ******************************/
+       54             void set_value_int()
+       55             {
+       56               int i;
+       57         8s    for(i=0; i<DATA_SIZE; i++){
+       58         8s      a_i[i] = rand() >> 2;
+       59         8s      b_i[i] = rand() >> 2;
+       60         8s      c_i[i] = 0;
+       61         8s    }
+       62               return;
+       63             }
+       64             
+       65             void set_value_float()
+       66             {
+       67               int i;
+       68         4s    for(i=0; i<DATA_SIZE; i++){
+       69         4s      a_f[i] = rand() / (float)RAND_MAX;
+       70         4s      b_f[i] = rand() / (float)RAND_MAX;
+       71         4s      c_f[i] = 0.f;
+       72         4s      ex_f[i] = rand() / (float)RAND_MAX;
+       73         4s    }
+       74               return;
+       75             }
+       76             
+       77             void set_value_double()
+       78             {
+       79               int i;
+       80         4s    for(i=0; i<DATA_SIZE; i++){
+       81         4s      a_d[i] = rand() / (double)RAND_MAX;
+       82         4s      b_d[i] = rand() / (double)RAND_MAX;
+       83         4s      c_d[i] = 0.;
+       84         4s      ex_d[i] = rand() / (double)RAND_MAX;
+       85         4s    }
+       86               return;
+       87             }
+       88             
+       89             /****************************** add ******************************/
+       90             void calc_add_int()
+       91             {
+       92               int i, j;
+       93               for(j=0; j<CALC_LOOP; j++){
+       94         8s      for(i=0; i<DATA_SIZE; i++){
+       95         8s        c_i[i] = a_i[i] + b_i[i];
+       96         8s      }
+       97               }
+       98               return;
+       99             }
+      100             
+      101             void calc_add_float()
+      102             {
+      103               int i, j;
+      104               for(j=0; j<CALC_LOOP; j++){
+      105         8v      for(i=0; i<DATA_SIZE; i++){
+      106         8v        c_f[i] = a_f[i] + b_f[i];
+      107         8v      }
+      108               }
+      109               return;
+      110             }
+      111             
+      112             void calc_add_double()
+      113             {
+      114               int i, j;
+      115               for(j=0; j<CALC_LOOP; j++){
+      116         8v      for(i=0; i<DATA_SIZE; i++){
+      117         8v        c_d[i] = a_d[i] + b_d[i];
+      118         8v      }
+      119               }
+      120               return;
+      121             }
+      122             
+      123             /****************************** mul ******************************/
+      124             void calc_mul_int()
+      125             {
+      126               int i, j;
+      127               for(j=0; j<CALC_LOOP; j++){
+      128         8s      for(i=0; i<DATA_SIZE; i++){
+      129         8s        c_i[i] = a_i[i] * b_i[i];
+      130         8s      }
+      131               }
+      132               return;
+      133             }
+      134             
+      135             void calc_mul_float()
+      136             {
+      137               int i, j;
+      138               for(j=0; j<CALC_LOOP; j++){
+      139         8v      for(i=0; i<DATA_SIZE; i++){
+      140         8v        c_f[i] = a_f[i] * b_f[i];
+      141         8v      }
+      142               }
+      143               return;
+      144             }
+      145             
+      146             void calc_mul_double()
+      147             {
+      148               int i, j;
+      149               for(j=0; j<CALC_LOOP; j++){
+      150         8v      for(i=0; i<DATA_SIZE; i++){
+      151         8v        c_d[i] = a_d[i] * b_d[i];
+      152         8v      }
+      153               }
+      154               return;
+      155             }
+      156             
+      157             
+      158             /****************************** div ******************************/
+      159             void calc_div_int()
+      160             {
+      161               int i, j;
+      162               for(j=0; j<CALC_LOOP; j++){
+      163         8s      for(i=0; i<DATA_SIZE; i++){
+      164         8s        c_i[i] = a_i[i] / b_i[i];
+      165         8s      }
+      166               }
+      167               return;
+      168             }
+      169             
+      170             void calc_div_float()
+      171             {
+      172               int i, j;
+      173               for(j=0; j<CALC_LOOP; j++){
+      174         6v      for(i=0; i<DATA_SIZE; i++){
+      175         6v        c_f[i] = a_f[i] / b_f[i];
+      176         6v      }
+      177               }
+      178               return;
+      179             }
+      180             
+      181             void calc_div_double()
+      182             {
+      183               int i, j;
+      184               for(j=0; j<CALC_LOOP; j++){
+      185         6v      for(i=0; i<DATA_SIZE; i++){
+      186         6v        c_d[i] = a_d[i] / b_d[i];
+      187         6v      }
+      188               }
+      189               return;
+      190             }
+      191             
+      192             
+      193             /**************************** mul+add ****************************/
+      194             
+      195             void calc_mul_add_float()
+      196             {
+      197               int i, j;
+      198               for(j=0; j<CALC_LOOP; j++){
+      199         8v      for(i=0; i<DATA_SIZE; i++){
+      200         8v        c_f[i] = a_f[i] * b_f[i] + ex_f[i];
+      201         8v      }
+      202               }
+      203               return;
+      204             }
+      205             
+      206             void calc_mul_add_double()
+      207             {
+      208               int i, j;
+      209               for(j=0; j<CALC_LOOP; j++){
+      210         8v      for(i=0; i<DATA_SIZE; i++){
+      211         8v        c_d[i] = a_d[i] * b_d[i] + ex_d[i];
+      212         8v      }
+      213               }
+      214               return;
+      215             }
+      216             
+      217             
+      218             /****************************** exp ******************************/
+      219             void calc_exp_float()
+      220             {
+      221               int i, j;
+      222               for(j=0; j<CALC_LOOP; j++){
+      223         4v      for(i=0; i<DATA_SIZE; i++){
+      224         4v        c_f[i] = expf(a_f[i]);
+      225         4v      }
+      226               }
+      227               return;
+      228             }
+      229             
+      230             void calc_exp_double()
+      231             {
+      232               int i, j;
+      233               for(j=0; j<CALC_LOOP; j++){
+      234         4v      for(i=0; i<DATA_SIZE; i++){
+      235         4v        c_d[i] = exp(a_d[i]);
+      236         4v      }
+      237               }
+      238               return;
+      239             }
+      240             
+      241             
+      242             double get_mflops(double t, int n)
+      243             {
+      244               return(n * CALC_LOOP*DATA_SIZE/t*1000/1000/1000);
+      245             }
+      246             
+      247             /***************************** main ******************************/
+      248             int main(int argc, char** argv)
+      249             {
+      250               clock_t t_start;
+      251               double time_add_int,    time_mul_int,    time_div_int;
+      252               double time_add_float,  time_mul_float,  time_div_float,  time_exp_float;
+      253               double time_add_double, time_mul_double, time_div_double, time_exp_double;
+      254             
+      255               double time_mul_add_float, time_mul_add_double;
+      256             
+      257             
+      258               printf("/********************** SIMPLE BECHMARKS ***********************/\n");
+      259               printf("                                           by nebula 20141124  \n\n");
+      260               printf("[%s]\n", argv[0]);
+      261               printf("calc num = %d * %d = %d\n", CALC_LOOP, DATA_SIZE, CALC_LOOP*DATA_SIZE);
+      262             
+      263               // int
+      264    i          set_value_int();
+      265    i          calc_add_int();
+      266             
+      267               t_start = clock();
+      268    i          calc_add_int();
+      269               time_add_int = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      270               printf("add(int)\t\t: %8.2f [msec]\n", time_add_int);
+      271               t_start = clock();
+      272    i          calc_mul_int();
+      273               time_mul_int = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      274               printf("mul(int)\t\t: %8.2f [msec]\n", time_mul_int);
+      275               t_start = clock();
+      276    i          calc_div_int();
+      277               time_div_int = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      278               printf("div(int)\t\t: %8.2f [msec]\n", time_div_int);
+      279             
+      280             
+      281               // float
+      282    i          set_value_float();
+      283    i          calc_add_float();
+      284             
+      285    i          set_value_float();
+      286               t_start = clock();
+      287               START_PROF("add_float", 11);
+      288    i          calc_add_float();
+      289               STOP_PROF("add_float", 11);
+      290               time_add_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      291    i          printf("add(float)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_add_float, get_mflops(time_add_float, 1));
+      292             
+      293    i          set_value_float();
+      294               t_start = clock();
+      295               START_PROF("mul_float", 12);
+      296    i          calc_mul_float();
+      297               STOP_PROF("mul_float", 12);
+      298               time_mul_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      299    i          printf("mul(float)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_mul_float, get_mflops(time_mul_float, 1));
+      300             
+      301    i          set_value_float();
+      302               t_start = clock();
+      303               START_PROF("div_float", 13);
+      304    i          calc_div_float();
+      305               STOP_PROF("div_float", 13);
+      306               time_div_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      307    i          printf("div(float)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_div_float, get_mflops(time_div_float, 1));
+      308             
+      309    i          set_value_float();
+      310               t_start = clock();
+      311               START_PROF("mul_add_float", 14);
+      312    i          calc_mul_add_float();
+      313               STOP_PROF("mul_add_float", 14);
+      314               time_mul_add_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      315    i          printf("mul+add(float)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_mul_add_float, get_mflops(time_mul_add_float, 2));
+      316             
+      317    i          set_value_float();
+      318               t_start = clock();
+      319               START_PROF("exp_float", 15);
+      320    i          calc_exp_float();
+      321               STOP_PROF("exp_float", 15);
+      322               time_exp_float = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      323               printf("exp(float)\t\t: %8.2f [msec]\n", time_exp_float);
+      324             
+      325             
+      326               // double
+      327    i          set_value_double();
+      328    i          calc_add_double();
+      329             
+      330    i          set_value_double();
+      331               t_start = clock();
+      332    i          calc_add_double();
+      333               time_add_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      334    i          printf("add(double)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_add_double, get_mflops(time_add_double, 1));
+      335             
+      336    i          set_value_double();
+      337               t_start = clock();
+      338    i          calc_mul_double();
+      339               time_mul_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      340    i          printf("mul(double)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_mul_double, get_mflops(time_mul_double, 1));
+      341             
+      342    i          set_value_double();
+      343               t_start = clock();
+      344    i          calc_div_double();
+      345               time_div_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      346    i          printf("div(double)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_div_double, get_mflops(time_div_double, 1));
+      347             
+      348    i          set_value_double();
+      349               t_start = clock();
+      350    i          calc_mul_add_double();
+      351               time_mul_add_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      352    i          printf("mul+add(double)\t\t: %8.2f [msec] = %8.2f [MFLOPS]\n", time_mul_add_double, get_mflops(time_mul_add_double, 2));
+      353             
+      354    i          set_value_double();
+      355               t_start = clock();
+      356    i          calc_exp_double();
+      357               time_exp_double = (clock()- t_start)*1000./CLOCKS_PER_SEC;
+      358               printf("exp(double)\t\t: %8.2f [msec]\n", time_exp_double);
+      359             
+      360               //print_value_int();
+      361             
+      362               return(0);
+      363             }
+Optimization messages
+  jwd8664o-i  "simple_bench.c", line 29: 関数呼出しなど最適化対象外の命令があるため、ソフトウェアパイプライニングを適用できません。
+  jwd8202o-i  "simple_bench.c", line 29: このループを展開数8回でループアンローリングしました。
+  jwd6122s-i  "simple_bench.c", line 30: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd8664o-i  "simple_bench.c", line 38: 関数呼出しなど最適化対象外の命令があるため、ソフトウェアパイプライニングを適用できません。
+  jwd8202o-i  "simple_bench.c", line 38: このループを展開数6回でループアンローリングしました。
+  jwd6122s-i  "simple_bench.c", line 39: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd8664o-i  "simple_bench.c", line 47: 関数呼出しなど最適化対象外の命令があるため、ソフトウェアパイプライニングを適用できません。
+  jwd8202o-i  "simple_bench.c", line 47: このループを展開数8回でループアンローリングしました。
+  jwd6122s-i  "simple_bench.c", line 48: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd6123s-i  "simple_bench.c", line 57: ループ内にSIMD化の制約となるデータの型が存在します。
+  jwd8664o-i  "simple_bench.c", line 57: 関数呼出しなど最適化対象外の命令があるため、ソフトウェアパイプライニングを適用できません。
+  jwd8202o-i  "simple_bench.c", line 57: このループを展開数8回でループアンローリングしました。
+  jwd6208s-i  "simple_bench.c", line 58: 変数'a_i'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd6122s-i  "simple_bench.c", line 58: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd6208s-i  "simple_bench.c", line 59: 変数'b_i'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd6122s-i  "simple_bench.c", line 59: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd6208s-i  "simple_bench.c", line 60: 変数'c_i'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd8664o-i  "simple_bench.c", line 68: 関数呼出しなど最適化対象外の命令があるため、ソフトウェアパイプライニングを適用できません。
+  jwd8202o-i  "simple_bench.c", line 68: このループを展開数4回でループアンローリングしました。
+  jwd6208s-i  "simple_bench.c", line 69: 変数'a_f'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd6122s-i  "simple_bench.c", line 69: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd6208s-i  "simple_bench.c", line 70: 変数'b_f'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd6122s-i  "simple_bench.c", line 70: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd6208s-i  "simple_bench.c", line 71: 変数'c_f'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd6208s-i  "simple_bench.c", line 72: 変数'ex_f'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd6122s-i  "simple_bench.c", line 72: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd8664o-i  "simple_bench.c", line 80: 関数呼出しなど最適化対象外の命令があるため、ソフトウェアパイプライニングを適用できません。
+  jwd8202o-i  "simple_bench.c", line 80: このループを展開数4回でループアンローリングしました。
+  jwd8206o-i  "simple_bench.c", line 81: 除算を逆数の乗算に変更しました。
+  jwd6208s-i  "simple_bench.c", line 81: 変数'a_d'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd6122s-i  "simple_bench.c", line 81: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd8206o-i  "simple_bench.c", line 82: 除算を逆数の乗算に変更しました。
+  jwd6208s-i  "simple_bench.c", line 82: 変数'b_d'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd6122s-i  "simple_bench.c", line 82: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd6208s-i  "simple_bench.c", line 83: 変数'c_d'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd8206o-i  "simple_bench.c", line 84: 除算を逆数の乗算に変更しました。
+  jwd6208s-i  "simple_bench.c", line 84: 変数'ex_d'を定義する順序がわからないため、定義・参照する順序が逐次実行と異なる可能性があり、このループはSIMD化できません。
+  jwd6122s-i  "simple_bench.c", line 84: ループ内にSIMD化の制約となる関数呼び出しが存在します。
+  jwd6123s-i  "simple_bench.c", line 94: ループ内にSIMD化の制約となるデータの型が存在します。
+  jwd8204o-i  "simple_bench.c", line 94: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 94: このループは、繰返し数が32回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6001s-i  "simple_bench.c", line 105: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 105: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 105: このループは、繰返し数が65回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6001s-i  "simple_bench.c", line 116: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 116: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 116: このループは、繰返し数が65回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6123s-i  "simple_bench.c", line 128: ループ内にSIMD化の制約となるデータの型が存在します。
+  jwd8204o-i  "simple_bench.c", line 128: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 128: このループは、繰返し数が32回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6001s-i  "simple_bench.c", line 139: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 139: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 139: このループは、繰返し数が65回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6001s-i  "simple_bench.c", line 150: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 150: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 150: このループは、繰返し数が65回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6123s-i  "simple_bench.c", line 163: ループ内にSIMD化の制約となるデータの型が存在します。
+  jwd8662o-i  "simple_bench.c", line 163: 良いスケジューリング結果を得られなかったため、ソフトウェアパイプライニングを適用できません。
+  jwd8202o-i  "simple_bench.c", line 163: このループを展開数8回でループアンローリングしました。
+  jwd6001s-i  "simple_bench.c", line 174: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 174: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 174: このループは、繰返し数が97回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6001s-i  "simple_bench.c", line 185: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 185: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 185: このループは、繰返し数が61回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6001s-i  "simple_bench.c", line 199: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 199: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 199: このループは、繰返し数が65回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6001s-i  "simple_bench.c", line 210: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 210: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 210: このループは、繰返し数が65回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6001s-i  "simple_bench.c", line 223: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 223: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 223: このループは、繰返し数が73回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd6001s-i  "simple_bench.c", line 234: ループ制御変数'i'のループをSIMD化しました。
+  jwd8204o-i  "simple_bench.c", line 234: このループをソフトウェアパイプライニングしました。
+  jwd8205o-i  "simple_bench.c", line 234: このループは、繰返し数が97回以上の時、ソフトウェアパイプライニングが有効になります。
+  jwd8206o-i  "simple_bench.c", line 244: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 244: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 264: 利用者定義の関数'set_value_int'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 265: 利用者定義の関数'calc_add_int'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 268: 利用者定義の関数'calc_add_int'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 269: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 269: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 272: 利用者定義の関数'calc_mul_int'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 273: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 273: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 276: 利用者定義の関数'calc_div_int'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 277: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 277: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 282: 利用者定義の関数'set_value_float'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 283: 利用者定義の関数'calc_add_float'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 285: 利用者定義の関数'set_value_float'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 288: 利用者定義の関数'calc_add_float'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 290: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 290: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 291: 利用者定義の関数'get_mflops'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 293: 利用者定義の関数'set_value_float'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 296: 利用者定義の関数'calc_mul_float'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 298: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 298: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 299: 利用者定義の関数'get_mflops'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 301: 利用者定義の関数'set_value_float'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 304: 利用者定義の関数'calc_div_float'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 306: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 306: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 307: 利用者定義の関数'get_mflops'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 309: 利用者定義の関数'set_value_float'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 312: 利用者定義の関数'calc_mul_add_float'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 314: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 314: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 315: 利用者定義の関数'get_mflops'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 317: 利用者定義の関数'set_value_float'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 320: 利用者定義の関数'calc_exp_float'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 322: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 322: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 327: 利用者定義の関数'set_value_double'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 328: 利用者定義の関数'calc_add_double'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 330: 利用者定義の関数'set_value_double'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 332: 利用者定義の関数'calc_add_double'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 333: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 333: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 334: 利用者定義の関数'get_mflops'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 336: 利用者定義の関数'set_value_double'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 338: 利用者定義の関数'calc_mul_double'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 339: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 339: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 340: 利用者定義の関数'get_mflops'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 342: 利用者定義の関数'set_value_double'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 344: 利用者定義の関数'calc_div_double'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 345: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 345: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 346: 利用者定義の関数'get_mflops'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 348: 利用者定義の関数'set_value_double'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 350: 利用者定義の関数'calc_mul_add_double'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 351: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 351: 多項式の演算順序を変更しました。
+  jwd8101o-i  "simple_bench.c", line 352: 利用者定義の関数'get_mflops'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 354: 利用者定義の関数'set_value_double'をインライン展開しました。
+  jwd8101o-i  "simple_bench.c", line 356: 利用者定義の関数'calc_exp_double'をインライン展開しました。
+  jwd8206o-i  "simple_bench.c", line 357: 除算を逆数の乗算に変更しました。
+  jwd8209o-i  "simple_bench.c", line 357: 多項式の演算順序を変更しました。
+Statistics information
+  Option information
+    Command line options : -Kfast,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta -c -o simple_bench.o
+    Effective options    : -noansi -Qy -Xa -x- -O3 -Ka1 -Kadr44 -Knoalias_const -Kconst
+                           -Kdalign -Keval -KFLTLD -Kfast_matmul -Knofconst -Knofenv_access
+                           -Kfp_contract -Kfp_relaxed -Kfsimple -KGREG_APPLI -Kilfunc
+                           -Knoipo -Klargepage -Klib -Kloop_blocking -Kloop_fission
+                           -Kloop_nofission_if -Kloop_fusion -Kloop_interchange
+                           -Kloop_nopart_simd -Klooptype=f -Knomemalias -Kmfunc=1 -Kns
+                           -Knoocl -Knoopenmp -Koptmsg=2 -Knoparallel -Knopreex
+                           -Kprefetch_cache_level=all -Kprefetch_conditional
+                           -Kprefetch_noindirect -Kprefetch_noinfer
+                           -Kprefetch_sequential=auto -Kprefetch_nostride
+                           -Kprefetch_nostrong -Kprefetch_strong_L2 -Krdconv
+                           -Krestp=restrict -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                           -Knostriping -Kswp -Kunroll -Knouxsimd -KNOXFILL -Nnoexceptions
+                           -Nnofjcex -Nnohook_func -Nnohook_time -Nline -Nlst=p
+                           -Nquickdbg=noheapchk -Nquickdbg=nosubchk -NRnotrap -Nrt_tune
+                           -Nsrc -Nsta -Nuse_rodata
+fccpx -Kfast,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta -o simple_bench_fcc.out simple_bench.o 
