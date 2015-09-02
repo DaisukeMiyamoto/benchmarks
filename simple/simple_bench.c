@@ -18,7 +18,7 @@
 
 
 #define CALC_LOOP 1000
-#define DATA_SIZE 3000000
+#define DATA_SIZE 300000
 
 int a_i[DATA_SIZE], b_i[DATA_SIZE], c_i[DATA_SIZE];
 float a_f[DATA_SIZE], b_f[DATA_SIZE], c_f[DATA_SIZE];
@@ -282,7 +282,7 @@ void calc_cmp_float()
 
 double get_mflops(double t, int n)
 {
-  return(n * CALC_LOOP*DATA_SIZE/t*1000/1000/1000);
+  return(n * CALC_LOOP*DATA_SIZE/t*1000./1000./1000.);
 }
 
 /***************************** main ******************************/

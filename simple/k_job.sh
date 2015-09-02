@@ -4,12 +4,12 @@
 #PJM --rsc-list "elapse=00:10:00"
 #PJM --stg-transfiles all
 #PJM --mpi "use-rankdir"
-#PJM --stgin "./simple_bench_fcc.out ./"
-#PJM --stgout "rank=* %r:./prof_cache/* /data/hp120263/k00634/result/bench/%j_cache/"
-#PJM --stgout "rank=* %r:./prof_perf/* /data/hp120263/k00634/result/bench/%j_perf/"
-#PJM --stgout "rank=* %r:./prof_stat/* /data/hp120263/k00634/result/bench/%j_stat/"
-#PJM --stgout "rank=* %r:./prof_inst/* /data/hp120263/k00634/result/bench/%j_inst/"
-#PJM --stgout "rank=* %r:./prof_mem/* /data/hp120263/k00634/result/bench/%j_mem/"
+#PJM --stgin "/home/hp120263/k00634/benchmarks/simple/simple_bench_fcc.out ./"
+#PJM --stgout "rank=* %r:./prof_cache/* /data/hp120263/k00634/result/prof/bench/%j_cache/"
+#PJM --stgout "rank=* %r:./prof_perf/* /data/hp120263/k00634/result/prof/bench/%j_perf/"
+#PJM --stgout "rank=* %r:./prof_stat/* /data/hp120263/k00634/result/prof/bench/%j_stat/"
+#PJM --stgout "rank=* %r:./prof_inst/* /data/hp120263/k00634/result/prof/bench/%j_inst/"
+#PJM --stgout "rank=* %r:./prof_mem/* /data/hp120263/k00634/result/prof/bench/%j_mem/"
 #PJM -s
 
 . /work/system/Env_base
