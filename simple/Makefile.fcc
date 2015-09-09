@@ -1,7 +1,7 @@
 # Makefile
 
 CC	 = fccpx
-CFLAGS   = -Kfast,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta
+CFLAGS   = -Kfast,openmp,optmsg=2 -DKCOMPUTER -Nrt_tune,src,sta
 LDFLAGS  = $(CFLAGS)
 LDLIBS   =
 INCLUDES = 
