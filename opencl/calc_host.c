@@ -1,23 +1,19 @@
 #include <stdio.h>
-#include <CL/cl.h>
 #include <stdio.h>
 #include <math.h>
 
+#include <CL/cl.h>
 #include "opencl_utils.h"
+#include "calc_utils.h"
 
-void calc_opencl(int datasize, double *data1, double *data2, double *result, const char *cl_filename)
+
+static CLInfo cli;
+
+static void calc_opencl(const int datasize, const double *data1, const double *data2, double *result)
 {
-  //cl_int num_rand = 4096 * 256;
-  cl_int num_rand = 4096 * 256;
-  int count_all, i;
-  //int num_generator = sizeof(mts)/sizeof(mts[0]);
+  char cl_filename[] = "vec_add.cl";
+  cl_int cl_datasize = datasize;
   int num_generator = 32;
-  double pi;
-
-  cl_platform_id platform_id = NULL;
-  cl_device_id device_id = NULL;
-  cl_context context = NULL;
-  cl_command_queue command_queue = NULL;
   cl_uint num_compute_unit;
   cl_uint num_work_item;
 
@@ -31,17 +27,17 @@ void calc_opencl(int datasize, double *data1, double *data2, double *result, con
   cl_event ev_mt_end, ev_pi_end, ev_copy_end;
   cl_ulong prof_start, prof_mt_end, prof_pi_end, prof_copy_end;
 
+  int i;
   cl_int ret;
 
   /* initialize */
-  printf (" [Initialize Device]\n");
-  num_compute_unit = init_cl(&platform_id, &device_id, &context, &command_queue);
+
+  num_compute_unit = cli.num_compute_unit;
   if (num_compute_unit < 1)
     {
       exit(-1);
     }
   num_work_item = (num_generator+(num_compute_unit-1)) / num_compute_unit;
-  printf ("   * Wrok Items: %d\n", num_work_item);
 
   /* setup item size */
   //global_item_size[0] = num_generator;
@@ -60,10 +56,6 @@ void calc_opencl(int datasize, double *data1, double *data2, double *result, con
   kernel_mt = clCreateKernel(program, "genrand", &ret);
   kernel_pi = clCreateKernel(program, "calc_pi", &ret);
   */
-
-  /* setup local memory */
-  //result = (cl_uint*)malloc(sizeof(cl_uint)*num_generator);
-
 
   /* setup global memory */
   /*
@@ -84,7 +76,6 @@ void calc_opencl(int datasize, double *data1, double *data2, double *result, con
   */
   
   /* execute kernel */
-  printf(" [Calculation]\n");
   /*
   clEnqueueNDRangeKernel(command_queue, kernel_mt, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_mt_end);
   clEnqueueNDRangeKernel(command_queue, kernel_pi, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_pi_end);
@@ -106,8 +97,6 @@ void calc_opencl(int datasize, double *data1, double *data2, double *result, con
   printf("   * pi = %f\n", pi);
   */
 
-  /* show profile */
-  printf(" [Profile]\n");
   /*
   clGetEventProfilingInfo(ev_mt_end, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &prof_start, NULL);
   clGetEventProfilingInfo(ev_mt_end, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &prof_mt_end, NULL);
@@ -131,27 +120,68 @@ void calc_opencl(int datasize, double *data1, double *data2, double *result, con
   clReleaseKernel(kernel_pi);
   */
 
-  //clReleaseProgram(program);
-  clReleaseCommandQueue(command_queue);
-  clReleaseContext(context);
-
 }
 
 
-double *calc_host(int datasize, double *data1, double *data2, double *result)
+void calc_host(const int datasize, const double *data1, const double *data2, double *result)
 {
-  ;
+  int i;
+  for (i=0; i<datasize; i++)
+    {
+      result[i] = data1[i] + data2[i];
+    }
+}
+
+double timeFunc(void (*func)(const int datasize, const double *data1, const double *data2, double *result),
+		const int loop,
+		const int datasize,
+		const double *data1,
+		const double *data2,
+		double *result)
+{
+  double start, end;
+  int i;
+
+  start = getTime();
+  for (i=0; i<loop; i++)
+    {
+      func(datasize, data1, data2, result);
+    }
+  end = getTime();
+
+  return (end - start);
+    
 }
 
 int main()
 {
-  const int datasize = 100;
+  const int datasize = 1000000;
   double *data1;
   double *data2;
   double *result;
+  double time_host, time_opencl=0.f;
 
-  calc_host (datasize, data1, data2, result);
-  calc_opencl (datasize, data1, data2, result, "vec_add.cl");
+  printf (" [Initialize Device]\n");
+  init_cl(&cli);
+  print_cl_info(&cli);
+
+  data1 = malloc(datasize * sizeof(double));
+  data2 = malloc(datasize * sizeof(double));
+  result = malloc(datasize * sizeof(double));
+
+  printf(" [Host Calculation]\n");
+  time_host   = timeFunc (calc_host,   100, datasize, data1, data2, result);
+  printf(" [OpenCL Calculation]\n");
+  time_opencl = timeFunc (calc_opencl, 100, datasize, data1, data2, result);
+
+  free (data1);
+  free (data2);
+  free (result);
+  finalize_cl(&cli);
+
+  printf (" [Result]\n");
+  printf ("   * Host   : %8.2f [ms]\n", time_host);
+  printf ("   * OpenCL : %8.2f [ms]\n", time_opencl);
 
   return 0;
 }
