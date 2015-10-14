@@ -9,25 +9,35 @@
 
 static CLInfo *cli;
 
-static void calc_opencl(const int datasize, const double *data1, const double *data2, double *result)
+void set_kernel(CLInfo *cli, char *kernel_name)
+{
+  cli->kernel = clCreateKernel(cli->program, kernel_name, NULL);
+}
+
+void release_kernel(CLInfo *cli)
+{
+  clReleaseKernel(cli->kernel);
+}
+
+static void calc_opencl(const unsigned long datasize, const double *data1, const double *data2, double *result)
 {
   //cl_int cl_datasize = datasize;
   //cl_uint num_compute_unit;
   //cl_uint num_work_item;
 
-  cl_kernel kernel = NULL;
+  //cl_kernel kernel = NULL;
   cl_mem d_data1, d_data2, d_result;
   size_t global_item_size[3], local_item_size[3];
 
-  cl_event ev_calc_end, ev_copy_end;
-  cl_ulong prof_start, prof_end, prof_copy_end;
+  cl_event ev_calc, ev_copy;
+  double calc_time, copy_time;
+  cl_ulong prof_start, prof_calc_end, prof_copy_end;
 
-  int i;
   cl_int ret;
-  size_t mem_size = datasize * sizeof(double);
+  size_t mem_size = datasize * sizeof(data1[0]);
 
   /* setup item size */
-  global_item_size[0] = (int)ceil((double)datasize / cli->num_compute_unit) * cli->num_compute_unit;
+  global_item_size[0] = (unsigned long)ceil((double)datasize / cli->num_compute_unit) * cli->num_compute_unit;
   global_item_size[1] = 1;
   global_item_size[2] = 1;
   local_item_size[0] = cli->num_compute_unit;
@@ -35,7 +45,7 @@ static void calc_opencl(const int datasize, const double *data1, const double *d
   local_item_size[2] = 1;
 
   /* read and build kernel */
-  kernel = clCreateKernel(cli->program, "vec_add", &ret);
+  //kernel = clCreateKernel(cli->program, "vec_add", &ret);
 
   /* setup global memory */
   d_data1  = clCreateBuffer(cli->context, CL_MEM_READ_ONLY, mem_size, NULL, NULL);
@@ -45,42 +55,36 @@ static void calc_opencl(const int datasize, const double *data1, const double *d
   clEnqueueWriteBuffer(cli->queue, d_data1, CL_TRUE, 0, mem_size, data1, 0, NULL, NULL);
   clEnqueueWriteBuffer(cli->queue, d_data2, CL_TRUE, 0, mem_size, data2, 0, NULL, NULL);
 
-  clSetKernelArg(kernel, 0, sizeof(unsigned int), &datasize);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_data1);
-  clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_data2);
-  clSetKernelArg(kernel, 3, sizeof(cl_mem), &d_result);
+  clSetKernelArg(cli->kernel, 0, sizeof(unsigned int), &datasize);
+  clSetKernelArg(cli->kernel, 1, sizeof(cl_mem), &d_data1);
+  clSetKernelArg(cli->kernel, 2, sizeof(cl_mem), &d_data2);
+  clSetKernelArg(cli->kernel, 3, sizeof(cl_mem), &d_result);
 
   /* execute kernel */
-  clEnqueueNDRangeKernel(cli->queue, kernel, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_calc_end);
+  clEnqueueNDRangeKernel(cli->queue, cli->kernel, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_calc);
   clFinish(cli->queue);
 
   /* read buffers */
-  clEnqueueReadBuffer(cli->queue, d_result, CL_TRUE, 0, mem_size, result, 0, NULL, &ev_copy_end);
+  clEnqueueReadBuffer(cli->queue, d_result, CL_TRUE, 0, mem_size, result, 0, NULL, &ev_copy);
 
-  /* show result */
-  /*
-  clGetEventProfilingInfo(ev_mt_end, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &prof_start, NULL);
-  clGetEventProfilingInfo(ev_mt_end, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &prof_mt_end, NULL);
-  clGetEventProfilingInfo(ev_pi_end, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &prof_pi_end, NULL);
-  clGetEventProfilingInfo(ev_copy_end, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &prof_copy_end, NULL);
+  clGetEventProfilingInfo(ev_calc, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &prof_start, NULL);
+  clGetEventProfilingInfo(ev_calc, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &prof_calc_end, NULL);
+  clGetEventProfilingInfo(ev_copy, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &prof_copy_end, NULL);
 
-  printf("   * mt:   %8.2f [ms]\n", (prof_mt_end - prof_start)/ 1000000.0);
-  printf("   * pi:   %8.2f [ms]\n", (prof_pi_end - prof_mt_end)/ 1000000.0);
-  printf("   * copy: %8.2f [ms]\n", (prof_copy_end - prof_pi_end)/ 1000000.0);
-  */
+  calc_time = (prof_calc_end - prof_start) / 1000000.0;
+  copy_time = (prof_copy_end - prof_calc_end) / 1000000.0;
+  printf("   * calc_time = %8.2f, copy_time = %8.2f\n", calc_time, copy_time);
 
   /* finalize */
-  clReleaseEvent(ev_calc_end);
-  clReleaseEvent(ev_copy_end);
+  clReleaseEvent(ev_calc);
+  clReleaseEvent(ev_copy);
   clReleaseMemObject(d_data1);
   clReleaseMemObject(d_data2);
   clReleaseMemObject(d_result);
-  clReleaseKernel(kernel);
-
 }
 
 
-void calc_host(const int datasize, const double *data1, const double *data2, double *result)
+void calc_host_add(const unsigned long datasize, const double *data1, const double *data2, double *result)
 {
   int i;
   for (i=0; i<datasize; i++)
@@ -89,16 +93,27 @@ void calc_host(const int datasize, const double *data1, const double *data2, dou
     }
 }
 
+void calc_host_exp_add(const unsigned long datasize, const double *data1, const double *data2, double *result)
+{
+  int i;
+  for (i=0; i<datasize; i++)
+    {
+      result[i] = exp(data1[i]) + data2[i];
+    }
+}
+
 
 int main()
 {
   int i;
-  const int datasize = 10024 * 1024;
+  const unsigned long datasize = 10024 * 1024 * 4;
+  int times = 10;
   double *data1;
   double *data2;
   double *result_host, *result_opencl;
   double diff = 0.0;
   double time_host, time_opencl=0.f;
+  size_t mem_size = datasize * sizeof(double);
   CLInfo _cli;
   cli = &_cli;
   
@@ -111,18 +126,26 @@ int main()
     }
   print_cl_info(cli);
 
-  data1 = malloc(datasize * sizeof(double));
-  data2 = malloc(datasize * sizeof(double));
-  result_host = malloc(datasize * sizeof(double));
-  result_opencl = malloc(datasize * sizeof(double));
+  data1 = malloc(mem_size);
+  data2 = malloc(mem_size);
+  result_host = malloc(mem_size);
+  result_opencl = malloc(mem_size);
+  if (data1 == NULL || data2 == NULL || result_host == NULL || result_opencl == NULL)
+    {
+      printf ("Memory allocation error.\n");
+      exit(-1);
+    }
 
   setRandomData(datasize, data1);
   setRandomData(datasize, data2);
 
   printf(" [Host Calculation]\n");
-  time_host   = timeFunc (calc_host,   100, datasize, data1, data2, result_host);
+  //time_host   = timeFunc (calc_host_add,   times, datasize, data1, data2, result_host);
+  time_host   = timeFunc (calc_host_exp_add,   times, datasize, data1, data2, result_host);
   printf(" [OpenCL Calculation]\n");
-  time_opencl = timeFunc (calc_opencl, 100, datasize, data1, data2, result_opencl);
+  //set_kernel(cli, "vec_add");
+  set_kernel(cli, "vec_exp_add");
+  time_opencl = timeFunc (calc_opencl, times, datasize, data1, data2, result_opencl);
 
   diff = diffArray(datasize, result_host, result_opencl);
 
@@ -130,8 +153,8 @@ int main()
   free (data2);
   free (result_host);
   free (result_opencl);
+  release_kernel(cli);
   finalize_cl(cli);
-
 
   printf (" [Result]\n");
   printf ("   * Host   : %10.6f [sec]\n", time_host);

@@ -15,7 +15,7 @@ typedef struct _cl_info {
   cl_context context;
   cl_command_queue queue;
   cl_program program;
-  //cl_uint num_work_item;
+  cl_kernel kernel;
 
   char vender_name[MAX_TEXT_BUFFER_SIZE];
   char device_name[MAX_TEXT_BUFFER_SIZE];
