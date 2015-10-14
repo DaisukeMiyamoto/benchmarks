@@ -7,90 +7,57 @@
 #include "calc_utils.h"
 
 
-static CLInfo cli;
+static CLInfo *cli;
 
 static void calc_opencl(const int datasize, const double *data1, const double *data2, double *result)
 {
-  char cl_filename[] = "vec_calc.cl";
-  cl_int cl_datasize = datasize;
-  int num_generator = 32;
-  cl_uint num_compute_unit;
-  cl_uint num_work_item;
+  //cl_int cl_datasize = datasize;
+  //cl_uint num_compute_unit;
+  //cl_uint num_work_item;
 
-  cl_program program = NULL;
-  cl_kernel kernel_mt = NULL, kernel_pi = NULL;
-
-  cl_mem rand, count;
+  cl_kernel kernel = NULL;
+  cl_mem d_data1, d_data2, d_result;
   size_t global_item_size[3], local_item_size[3];
-  cl_mem dev_mts;
-  cl_event ev_mt_end, ev_pi_end, ev_copy_end;
-  cl_ulong prof_start, prof_mt_end, prof_pi_end, prof_copy_end;
+
+  cl_event ev_calc_end, ev_copy_end;
+  cl_ulong prof_start, prof_end, prof_copy_end;
 
   int i;
   cl_int ret;
-
-  /* initialize */
-  num_compute_unit = cli.num_compute_unit;
-  num_work_item = (num_generator+(num_compute_unit-1)) / num_compute_unit;
+  size_t mem_size = datasize * sizeof(double);
 
   /* setup item size */
-  //global_item_size[0] = num_generator;
-  global_item_size[0] = num_work_item * num_compute_unit;
+  global_item_size[0] = (int)ceil((double)datasize / cli->num_compute_unit) * cli->num_compute_unit;
   global_item_size[1] = 1;
   global_item_size[2] = 1;
-  //local_item_size[0] = num_generator;
-  local_item_size[0] = num_work_item;
+  local_item_size[0] = cli->num_compute_unit;
   local_item_size[1] = 1;
   local_item_size[2] = 1;
 
   /* read and build kernel */
-  /*
-  program = read_cl_kernel_src(context, cl_filename);
-  clBuildProgram(program, 1, &device_id, "", NULL, NULL);
-  kernel_mt = clCreateKernel(program, "genrand", &ret);
-  kernel_pi = clCreateKernel(program, "calc_pi", &ret);
-  */
+  kernel = clCreateKernel(cli->program, "vec_add", &ret);
 
   /* setup global memory */
-  /*
-  rand = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_uint)*num_rand*num_generator, NULL, &ret);
-  count = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_uint)*num_generator, NULL, &ret);
-  dev_mts = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(mts), NULL, &ret);
-  clEnqueueWriteBuffer(command_queue, dev_mts, CL_TRUE, 0, sizeof(mts), mts, 0, NULL, NULL);
-
-  clSetKernelArg(kernel_mt, 0, sizeof(cl_mem), (void*)&rand);
-  clSetKernelArg(kernel_mt, 1, sizeof(cl_mem), (void*)&dev_mts);
-  clSetKernelArg(kernel_mt, 2, sizeof(num_rand), &num_rand);
-  clSetKernelArg(kernel_mt, 3, sizeof(num_generator), &num_generator);
-
-  clSetKernelArg(kernel_pi, 0, sizeof(cl_mem), (void*)&count);
-  clSetKernelArg(kernel_pi, 1, sizeof(cl_mem), (void*)&rand);
-  clSetKernelArg(kernel_pi, 2, sizeof(num_rand), &num_rand);
-  clSetKernelArg(kernel_pi, 3, sizeof(num_generator), &num_generator);
-  */
+  d_data1  = clCreateBuffer(cli->context, CL_MEM_READ_ONLY, mem_size, NULL, NULL);
+  d_data2  = clCreateBuffer(cli->context, CL_MEM_READ_ONLY, mem_size, NULL, NULL);
+  d_result = clCreateBuffer(cli->context, CL_MEM_WRITE_ONLY, mem_size, NULL, NULL);
   
+  clEnqueueWriteBuffer(cli->queue, d_data1, CL_TRUE, 0, mem_size, data1, 0, NULL, NULL);
+  clEnqueueWriteBuffer(cli->queue, d_data2, CL_TRUE, 0, mem_size, data2, 0, NULL, NULL);
+
+  clSetKernelArg(kernel, 0, sizeof(unsigned int), &datasize);
+  clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_data1);
+  clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_data2);
+  clSetKernelArg(kernel, 3, sizeof(cl_mem), &d_result);
+
   /* execute kernel */
-  /*
-  clEnqueueNDRangeKernel(command_queue, kernel_mt, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_mt_end);
-  clEnqueueNDRangeKernel(command_queue, kernel_pi, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_pi_end);
-  clFinish(command_queue);
-  */
+  clEnqueueNDRangeKernel(cli->queue, kernel, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_calc_end);
+  clFinish(cli->queue);
 
   /* read buffers */
-  //clEnqueueReadBuffer(command_queue, count, CL_TRUE, 0, sizeof(cl_uint)*num_generator, result, 0, NULL, &ev_copy_end);
-
+  clEnqueueReadBuffer(cli->queue, d_result, CL_TRUE, 0, mem_size, result, 0, NULL, &ev_copy_end);
 
   /* show result */
-  /*
-  count_all = 0;
-  for(i=0; i<num_generator; i++){
-    count_all += result[i];
-  }
-
-  pi = ((double)count_all)/(num_rand * num_generator) * 4;
-  printf("   * pi = %f\n", pi);
-  */
-
   /*
   clGetEventProfilingInfo(ev_mt_end, CL_PROFILING_COMMAND_QUEUED, sizeof(cl_ulong), &prof_start, NULL);
   clGetEventProfilingInfo(ev_mt_end, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &prof_mt_end, NULL);
@@ -103,16 +70,12 @@ static void calc_opencl(const int datasize, const double *data1, const double *d
   */
 
   /* finalize */
-  /*
-  clReleaseEvent(ev_mt_end);
-  clReleaseEvent(ev_pi_end);
+  clReleaseEvent(ev_calc_end);
   clReleaseEvent(ev_copy_end);
-
-  clReleaseMemObject(rand);
-  clReleaseMemObject(count);
-  clReleaseKernel(kernel_mt);
-  clReleaseKernel(kernel_pi);
-  */
+  clReleaseMemObject(d_data1);
+  clReleaseMemObject(d_data2);
+  clReleaseMemObject(d_result);
+  clReleaseKernel(kernel);
 
 }
 
@@ -129,21 +92,24 @@ void calc_host(const int datasize, const double *data1, const double *data2, dou
 
 int main()
 {
-  const int datasize = 1024 * 1024;
+  int i;
+  const int datasize = 10024 * 1024;
   double *data1;
   double *data2;
   double *result_host, *result_opencl;
   double diff = 0.0;
   double time_host, time_opencl=0.f;
-
+  CLInfo _cli;
+  cli = &_cli;
+  
   printf (" [Initialize Device]\n");
-  init_cl(&cli);
-  if (cli.state != 1)
+  init_cl(cli, "vec_calc.cl");
+  if (cli->state != 1)
     {
       printf ("No device found.\n");
       exit(-1);
     }
-  print_cl_info(&cli);
+  print_cl_info(cli);
 
   data1 = malloc(datasize * sizeof(double));
   data2 = malloc(datasize * sizeof(double));
@@ -164,7 +130,7 @@ int main()
   free (data2);
   free (result_host);
   free (result_opencl);
-  finalize_cl(&cli);
+  finalize_cl(cli);
 
 
   printf (" [Result]\n");

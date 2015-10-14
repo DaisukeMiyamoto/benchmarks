@@ -14,7 +14,8 @@ typedef struct _cl_info {
   cl_device_id device_id;
   cl_context context;
   cl_command_queue queue;
-  cl_uint num_work_item;
+  cl_program program;
+  //cl_uint num_work_item;
 
   char vender_name[MAX_TEXT_BUFFER_SIZE];
   char device_name[MAX_TEXT_BUFFER_SIZE];
@@ -30,7 +31,7 @@ cl_uint init_cl(cl_platform_id *p_platform_id, cl_device_id *p_device_id
 		, cl_context *p_context, cl_command_queue *p_command_queue);
 */
 
-int init_cl(CLInfo *cli);
+int init_cl(CLInfo *cli, char *kernel_filename);
 int finalize_cl(CLInfo *cli);
 void print_cl_info(CLInfo *cli);
 

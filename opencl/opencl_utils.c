@@ -6,7 +6,7 @@
 //cl_uint init_cl(cl_platform_id *p_platform_id, cl_device_id *p_device_id
 //	    , cl_context *p_context, cl_command_queue *p_command_queue)
 
-int init_cl(CLInfo *cli)
+int init_cl(CLInfo *cli, char *kernel_filename)
 {
   cl_uint num_devices;
   cl_uint num_platforms;
@@ -36,6 +36,13 @@ int init_cl(CLInfo *cli)
 
   cli->context = clCreateContext (NULL, 1, &(cli->device_id), NULL, NULL, &ret);
   cli->queue = clCreateCommandQueue (cli->context, cli->device_id, CL_QUEUE_PROFILING_ENABLE, &ret);
+
+  if (kernel_filename != NULL)
+    {
+      cli->program = read_cl_kernel_src(cli->context, kernel_filename);
+      clBuildProgram(cli->program, 1, &(cli->device_id), "", NULL, NULL);
+    }
+
 
   cli->state = 1;
   return(cli->state);

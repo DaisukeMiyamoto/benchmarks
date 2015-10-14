@@ -1,5 +1,6 @@
 # for K
 *.sh.*
+*~
 
 # Object files
 *.o

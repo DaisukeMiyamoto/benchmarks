@@ -1,5 +1,6 @@
 
-#define FLOAT float
+//#define FLOAT float
+#define FLOAT double
 
 __kernel void vec_add (const int datasize, __global const FLOAT *data1, __global const FLOAT *data2, __global FLOAT *result)
 {
