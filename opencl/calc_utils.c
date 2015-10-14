@@ -38,12 +38,33 @@ void setRandomData(const int datasize, double *data)
 double diffArray(const int datasize, const double *data1, const double *data2)
 {
   int i;
-  double diff_sum;
+  double diff_sum = 0.0;
 
   for (i=0; i<datasize; i++)
     {
       // rouding error
       diff_sum += fabs(data1[i] - data2[i]);
     }
+  return (diff_sum);
 }
 
+double timeFunc(void (*func)(const int datasize, const double *data1, const double *data2, double *result),
+		const int loop,
+		const int datasize,
+		const double *data1,
+		const double *data2,
+		double *result)
+{
+  double start, end;
+  int i;
+
+  start = getTime();
+  for (i=0; i<loop; i++)
+    {
+      func(datasize, data1, data2, result);
+    }
+  end = getTime();
+
+  return (end - start);
+    
+}

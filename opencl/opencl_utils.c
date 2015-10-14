@@ -8,11 +8,6 @@
 
 int init_cl(CLInfo *cli)
 {
-  /*
-  cl_context context = NULL;
-  cl_command_queue command_queue = NULL;
-  cl_uint num_compute_unit;
-  */
   cl_uint num_devices;
   cl_uint num_platforms;
   cl_int ret;
@@ -24,7 +19,6 @@ int init_cl(CLInfo *cli)
   clGetDeviceIDs(cli->platform_id, CL_DEVICE_TYPE_DEFAULT, MAX_DEVICES, &(cli->device_id), &num_devices);
   if (num_devices == 0)
     {
-      printf ("No device found.\n");
       return (-1);
     }
   else

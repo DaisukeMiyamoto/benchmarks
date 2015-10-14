@@ -11,7 +11,7 @@ static CLInfo cli;
 
 static void calc_opencl(const int datasize, const double *data1, const double *data2, double *result)
 {
-  char cl_filename[] = "vec_add.cl";
+  char cl_filename[] = "vec_calc.cl";
   cl_int cl_datasize = datasize;
   int num_generator = 32;
   cl_uint num_compute_unit;
@@ -21,7 +21,6 @@ static void calc_opencl(const int datasize, const double *data1, const double *d
   cl_kernel kernel_mt = NULL, kernel_pi = NULL;
 
   cl_mem rand, count;
-  //cl_uint *result;
   size_t global_item_size[3], local_item_size[3];
   cl_mem dev_mts;
   cl_event ev_mt_end, ev_pi_end, ev_copy_end;
@@ -31,12 +30,7 @@ static void calc_opencl(const int datasize, const double *data1, const double *d
   cl_int ret;
 
   /* initialize */
-
   num_compute_unit = cli.num_compute_unit;
-  if (num_compute_unit < 1)
-    {
-      exit(-1);
-    }
   num_work_item = (num_generator+(num_compute_unit-1)) / num_compute_unit;
 
   /* setup item size */
@@ -132,57 +126,52 @@ void calc_host(const int datasize, const double *data1, const double *data2, dou
     }
 }
 
-double timeFunc(void (*func)(const int datasize, const double *data1, const double *data2, double *result),
-		const int loop,
-		const int datasize,
-		const double *data1,
-		const double *data2,
-		double *result)
-{
-  double start, end;
-  int i;
-
-  start = getTime();
-  for (i=0; i<loop; i++)
-    {
-      func(datasize, data1, data2, result);
-    }
-  end = getTime();
-
-  return (end - start);
-    
-}
 
 int main()
 {
-  const int datasize = 1000000;
+  const int datasize = 1024 * 1024;
   double *data1;
   double *data2;
-  double *result;
+  double *result_host, *result_opencl;
+  double diff = 0.0;
   double time_host, time_opencl=0.f;
 
   printf (" [Initialize Device]\n");
   init_cl(&cli);
+  if (cli.state != 1)
+    {
+      printf ("No device found.\n");
+      exit(-1);
+    }
   print_cl_info(&cli);
 
   data1 = malloc(datasize * sizeof(double));
   data2 = malloc(datasize * sizeof(double));
-  result = malloc(datasize * sizeof(double));
+  result_host = malloc(datasize * sizeof(double));
+  result_opencl = malloc(datasize * sizeof(double));
+
+  setRandomData(datasize, data1);
+  setRandomData(datasize, data2);
 
   printf(" [Host Calculation]\n");
-  time_host   = timeFunc (calc_host,   100, datasize, data1, data2, result);
+  time_host   = timeFunc (calc_host,   100, datasize, data1, data2, result_host);
   printf(" [OpenCL Calculation]\n");
-  time_opencl = timeFunc (calc_opencl, 100, datasize, data1, data2, result);
+  time_opencl = timeFunc (calc_opencl, 100, datasize, data1, data2, result_opencl);
+
+  diff = diffArray(datasize, result_host, result_opencl);
 
   free (data1);
   free (data2);
-  free (result);
+  free (result_host);
+  free (result_opencl);
   finalize_cl(&cli);
 
-  printf (" [Result]\n");
-  printf ("   * Host   : %8.2f [ms]\n", time_host);
-  printf ("   * OpenCL : %8.2f [ms]\n", time_opencl);
 
-  return 0;
+  printf (" [Result]\n");
+  printf ("   * Host   : %10.6f [sec]\n", time_host);
+  printf ("   * OpenCL : %10.6f [sec]\n", time_opencl);
+  printf ("   * Diff   : %10.2f (%s)\n", diff, (diff < 0.00001? "OK!" : "Fail"));
+
+  return (0);
 }
 
