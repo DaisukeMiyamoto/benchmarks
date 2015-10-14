@@ -20,6 +20,6 @@ __kernel void vec_exp_add (const unsigned long datasize, __global const FLOAT *d
 {
   int gid = get_global_id(0);
   if (gid > datasize) return;
-  result[gid] = mexp(data1[gid]) + data2[gid];  
+  result[gid] = exp(data1[gid]) + data2[gid];  
 }
 

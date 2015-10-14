@@ -30,12 +30,14 @@ static void calc_opencl(const unsigned long datasize, const double *data1, const
 
   cl_int ret;
   size_t mem_size = datasize * sizeof(data1[0]);
+  cl_uint block_size;
+  block_size = cli->num_compute_unit*32;
 
   /* setup item size */
-  global_item_size[0] = (unsigned long)ceil((double)datasize / cli->num_compute_unit) * cli->num_compute_unit;
+  global_item_size[0] = (unsigned long)ceil((double)datasize / block_size) * block_size;
   global_item_size[1] = 1;
   global_item_size[2] = 1;
-  local_item_size[0] = cli->num_compute_unit;
+  local_item_size[0] = block_size;
   local_item_size[1] = 1;
   local_item_size[2] = 1;
 
