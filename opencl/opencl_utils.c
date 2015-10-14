@@ -40,7 +40,16 @@ int init_cl(CLInfo *cli, char *kernel_filename)
   if (kernel_filename != NULL)
     {
       cli->program = read_cl_kernel_src(cli->context, kernel_filename);
-      clBuildProgram(cli->program, 1, &(cli->device_id), "", NULL, NULL);
+      ret = clBuildProgram(cli->program, 1, &(cli->device_id), "", NULL, NULL);
+      if (ret != CL_SUCCESS)
+	{
+	  char buffer[2048];
+	  size_t len;
+	  clGetProgramBuildInfo(cli->program, cli->device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+	  printf(" [OpenCL Build Error]\n%s\n", buffer);
+	  return(cli->state);
+	}
+
     }
 
 

@@ -21,11 +21,6 @@ void release_kernel(CLInfo *cli)
 
 static void calc_opencl(const unsigned long datasize, const double *data1, const double *data2, double *result)
 {
-  //cl_int cl_datasize = datasize;
-  //cl_uint num_compute_unit;
-  //cl_uint num_work_item;
-
-  //cl_kernel kernel = NULL;
   cl_mem d_data1, d_data2, d_result;
   size_t global_item_size[3], local_item_size[3];
 
@@ -44,9 +39,6 @@ static void calc_opencl(const unsigned long datasize, const double *data1, const
   local_item_size[1] = 1;
   local_item_size[2] = 1;
 
-  /* read and build kernel */
-  //kernel = clCreateKernel(cli->program, "vec_add", &ret);
-
   /* setup global memory */
   d_data1  = clCreateBuffer(cli->context, CL_MEM_READ_ONLY, mem_size, NULL, NULL);
   d_data2  = clCreateBuffer(cli->context, CL_MEM_READ_ONLY, mem_size, NULL, NULL);
@@ -55,7 +47,7 @@ static void calc_opencl(const unsigned long datasize, const double *data1, const
   clEnqueueWriteBuffer(cli->queue, d_data1, CL_TRUE, 0, mem_size, data1, 0, NULL, NULL);
   clEnqueueWriteBuffer(cli->queue, d_data2, CL_TRUE, 0, mem_size, data2, 0, NULL, NULL);
 
-  clSetKernelArg(cli->kernel, 0, sizeof(unsigned int), &datasize);
+  clSetKernelArg(cli->kernel, 0, sizeof(unsigned long), &datasize);
   clSetKernelArg(cli->kernel, 1, sizeof(cl_mem), &d_data1);
   clSetKernelArg(cli->kernel, 2, sizeof(cl_mem), &d_data2);
   clSetKernelArg(cli->kernel, 3, sizeof(cl_mem), &d_result);
@@ -71,8 +63,8 @@ static void calc_opencl(const unsigned long datasize, const double *data1, const
   clGetEventProfilingInfo(ev_calc, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &prof_calc_end, NULL);
   clGetEventProfilingInfo(ev_copy, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &prof_copy_end, NULL);
 
-  calc_time = (prof_calc_end - prof_start) / 1000000.0;
-  copy_time = (prof_copy_end - prof_calc_end) / 1000000.0;
+  calc_time = (double)(prof_calc_end - prof_start) / 1000000.0;
+  copy_time = (double)(prof_copy_end - prof_calc_end) / 1000000.0;
   printf("   * calc_time = %8.2f, copy_time = %8.2f\n", calc_time, copy_time);
 
   /* finalize */
@@ -126,10 +118,10 @@ int main()
     }
   print_cl_info(cli);
 
-  data1 = malloc(mem_size);
-  data2 = malloc(mem_size);
-  result_host = malloc(mem_size);
-  result_opencl = malloc(mem_size);
+  data1 = (double *)malloc(mem_size);
+  data2 = (double *)malloc(mem_size);
+  result_host = (double *)malloc(mem_size);
+  result_opencl = (double *)malloc(mem_size);
   if (data1 == NULL || data2 == NULL || result_host == NULL || result_opencl == NULL)
     {
       printf ("Memory allocation error.\n");
