@@ -3,10 +3,10 @@
 CC	 	= nvcc
 CFLAGS	 	= 
 LDFLAGS		= 
-INCLUDES 	= opencl_utils.h calc_utils.h
+INCLUDES 	= opencl_utils.h calc_utils.h hh.h
 LIBS 		= -lm -lOpenCL
-OBJS    	= calc_host.o opencl_utils.o calc_utils.o
-PROG		= calc.out
+OBJS    	= hh_host.o opencl_utils.o calc_utils.o hh.o
+PROG		= hh.out
 
 all: $(PROG)
 
@@ -18,5 +18,6 @@ $(PROG): $(OBJS)
 .c.o:
 
 clean:
-	rm -f $(OBJS) $(PROG) *~ \#*
+	rm -f $(OBJS) $(PROG) *~ \#* result.txt
+
 

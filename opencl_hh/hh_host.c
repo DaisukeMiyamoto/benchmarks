@@ -2,22 +2,19 @@
 #include <stdio.h>
 #include <math.h>
 
+//#define USE_MPI
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+
 #include <CL/cl.h>
 #include "opencl_utils.h"
 #include "calc_utils.h"
+#include "hh.h"
 
 
 static CLInfo *cli;
 
-void set_kernel(CLInfo *cli, char *kernel_name)
-{
-  cli->kernel = clCreateKernel(cli->program, kernel_name, NULL);
-}
-
-void release_kernel(CLInfo *cli)
-{
-  clReleaseKernel(cli->kernel);
-}
 
 static void calc_opencl(const unsigned long datasize, const double *data1, const double *data2, double *result)
 {
@@ -32,6 +29,10 @@ static void calc_opencl(const unsigned long datasize, const double *data1, const
   size_t mem_size = datasize * sizeof(data1[0]);
   cl_uint block_size;
   block_size = cli->num_compute_unit*32;
+
+  char kernel_name[] = "vec_add";
+
+  cli->kernel = clCreateKernel(cli->program, kernel_name, NULL);
 
   /* setup item size */
   global_item_size[0] = (unsigned long)ceil((double)datasize / block_size) * block_size;
@@ -75,17 +76,9 @@ static void calc_opencl(const unsigned long datasize, const double *data1, const
   clReleaseMemObject(d_data1);
   clReleaseMemObject(d_data2);
   clReleaseMemObject(d_result);
+  clReleaseKernel(cli->kernel);
 }
 
-
-void calc_host_add(const unsigned long datasize, const double *data1, const double *data2, double *result)
-{
-  int i;
-  for (i=0; i<datasize; i++)
-    {
-      result[i] = data1[i] + data2[i];
-    }
-}
 
 void calc_host_exp_add(const unsigned long datasize, const double *data1, const double *data2, double *result)
 {
@@ -96,7 +89,7 @@ void calc_host_exp_add(const unsigned long datasize, const double *data1, const 
     }
 }
 
-
+/*
 int main()
 {
   int i;
@@ -157,4 +150,83 @@ int main()
 
   return (0);
 }
+*/
 
+void host_add(const unsigned long datasize, const double *data1, const double *data2, double *result)
+{
+  int i;
+  for (i=0; i<datasize; i++)
+    {
+      result[i] = data1[i] + data2[i];
+    }
+}
+
+
+int main(int argc, char **argv)
+{
+  double host_start, host_finish;
+  double opencl_start, opencl_finish;
+  double diff;
+  unsigned long datasize = N_COMPARTMENT;
+  size_t mem_size = datasize * sizeof(double);
+
+  FLOAT *result_host;
+  FLOAT *result_opencl;
+  int i;
+
+  printf (" [Initialize Device]\n");
+
+#ifdef USE_MPI
+  int myid;
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+#endif
+
+  hh_initialize(datasize);
+  hh_makeTable();
+
+  result_host = (FLOAT *)malloc(mem_size);
+  result_opencl = (FLOAT *)malloc(mem_size);
+
+#ifdef KCOMPUTER
+  fapp_start("calc", 1, 1);  
+#endif
+
+
+  printf(" [Host Calculation]\n");
+  host_start = getTime();
+  //host_add(datasize, hh_n, hh_m, result_host);
+  hh_calc(1000);
+  host_finish = getTime();
+
+  printf(" [OpenCL Calculation]\n");
+  opencl_start = getTime();
+  host_add(datasize, hh_n, hh_m, result_opencl);
+  opencl_finish = getTime();
+
+#ifdef KCOMPUTER
+  fapp_stop("calc", 1, 1);
+#endif
+
+  /*
+    for (i=0; i<datasize; i++)
+    {
+    printf("%f + %f = %f, %f\n", hh_n[i], hh_m[i], result_host[i], result_opencl[i]);
+    }
+  */
+  
+  diff = diffArray(datasize, result_host, result_opencl);
+
+
+#ifdef USE_MPI
+  MPI_Finalize();
+#endif
+
+  printf (" [Result]\n");
+  printf ("   * Host   : %10.6f [sec]\n", host_finish - host_start);
+  printf ("   * OpenCL : %10.6f [sec]\n", opencl_finish - opencl_start);
+  printf ("   * Diff   : %10.2f (%s)\n", diff, (diff < 0.00001? "OK!" : "Fail"));
+
+  return(0);
+
+}

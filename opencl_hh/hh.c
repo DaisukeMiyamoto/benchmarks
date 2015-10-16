@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include "mpi.h"
 
 #include "hh.h"
 
@@ -20,11 +19,11 @@ static FLOAT calc_alpha_h (FLOAT v) { return( 0.07  * EXP( -(v+65) / 20.) );    
 static FLOAT calc_beta_h  (FLOAT v) { return( 1. / (EXP( -(v+35) / 10.) + 1.) ); }
 
 
-static FLOAT hh_v[N_COMPARTMENT];     // [mV]
-static FLOAT hh_dv[N_COMPARTMENT];
-static FLOAT hh_n[N_COMPARTMENT];
-static FLOAT hh_m[N_COMPARTMENT];
-static FLOAT hh_h[N_COMPARTMENT];
+FLOAT hh_v[N_COMPARTMENT];     // [mV]
+FLOAT hh_dv[N_COMPARTMENT];
+FLOAT hh_n[N_COMPARTMENT];
+FLOAT hh_m[N_COMPARTMENT];
+FLOAT hh_h[N_COMPARTMENT];
 
 
 static FLOAT hh_cm[N_COMPARTMENT];
@@ -89,7 +88,6 @@ FLOAT hh_table[6][TABLE_SIZE];
 #define TABLE_H_TAU(x) hh_table[4][(x)]
 #define TABLE_H_INF(x) hh_table[5][(x)]
 #endif
-
 
 
 void hh_makeTable()
@@ -167,7 +165,6 @@ void hh_calc_step(FLOAT i_inj)
     fapp_start("state", 2, 2);  
 #endif
 
-
 #pragma omp for
     for(j=0; j<N_COMPARTMENT; j++)
       {
@@ -206,59 +203,53 @@ void hh_calc_step(FLOAT i_inj)
   }
 }
 
-int hh_calc(FLOAT stoptime)
+FLOAT hh_set_i_inj(unsigned int i)
 {
-  unsigned int i;
-  unsigned int i_stop;
-
+  FLOAT i_inj;
   const int inj_start =  50./DT;
   const int inj_stop  = 300./DT;
+  const int inj2_start = 600./DT;
+  const int inj2_stop  = 700./DT;
+
+  if((i > inj_start && i < inj_stop) || (i > inj2_start && i < inj2_stop))
+    {
+      i_inj = 10.0;
+    }
+  else
+    {
+      i_inj = 0.0;
+    }
+  return(i_inj);
+}
+
+int hh_calc(FLOAT stoptime)
+{
+  unsigned int i, i_stop;
+  char *header = "# Hodgkin-Huxley Benchmark for OpenCL\n"\
+    "# nebula (20151010)\n"\
+    "# t , i_inj [nA], V [mV]\n";
+
+#ifdef SAVE_RESULT
+  FILE *fp;
+  fp = fopen("result.txt", "w");
+#endif
 
   for(i=0,i_stop=stoptime/DT; i<i_stop; i++)
     {
       FLOAT i_inj;
-      if(i > inj_start && i < inj_stop)
-	{
-	  i_inj = 10.0;
-	}
-      else
-	{
-	  i_inj = 0.0;
-	}
-      //printf("%f %f %f %f\n", i*DT, i_inj, hh_v[0], hh_v[N_COMPARTMENT-1]);
-
+      i_inj = hh_set_i_inj(i);
       hh_calc_step(i_inj);
-      printf ("%f, %f, %f\n", i*DT, i_inj, hh_v[0]);
+
+#ifdef SAVE_RESULT
+      fprintf (fp, "%f, %f, %f\n", i*DT, i_inj, hh_v[0]);
+#endif
     }
+
+#ifdef SAVE_RESULT
+  fclose(fp);
+#endif
+
   return(0);
 }
 
 
-int main(int argc, char **argv)
-{
-  int myid;
-  MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-
-  hh_initialize(N_COMPARTMENT);
-  hh_makeTable();
-
-#ifdef KCOMPUTER
-  fapp_start("calc", 1, 1);  
-#endif
-
-  //printf("start (%d)\n", myid);
-  printf ("# Hodgkin-Huxley Benchmark for OpenCL\n");
-  printf ("# nebula (20151010)\n");
-  printf ("# t , i_inj [nA], V [mV]\n");
-  hh_calc(400);
-  //printf("finished (%d)\n", myid);
-
-#ifdef KCOMPUTER
-  fapp_stop("calc", 1, 1);
-#endif
-
-  MPI_Finalize();
-  return(0);
-
-}
