@@ -162,17 +162,19 @@ void host_add(const unsigned long datasize, const double *data1, const double *d
 }
 
 void opencl_hh(CLInfo *cli,
+	       const int max_t,
 	       const unsigned long datasize,
 	       const FLOAT *host_n,
 	       const FLOAT *host_m,
 	       const FLOAT *host_h,
+	       const FLOAT *host_table,
 	       FLOAT *host_v,
 	       FLOAT *host_dv,
 	       FLOAT *result)
 {
   size_t global_item_size[3]={1, 1, 1}, local_item_size[3]={1, 1, 1};
 
-  cl_mem dev_n, dev_m, dev_h, dev_v, dev_dv;
+  cl_mem dev_n, dev_m, dev_h, dev_v, dev_dv, dev_table;
 
   cl_kernel kernel_hh_init, kernel_hh_calc;
 
@@ -181,6 +183,7 @@ void opencl_hh(CLInfo *cli,
   cl_ulong prof_start, prof_calc_end, prof_copy_end;
 
   cl_int ret;
+  int i;
 
   size_t mem_size = datasize * sizeof(FLOAT);
   cl_uint block_size;
@@ -194,15 +197,17 @@ void opencl_hh(CLInfo *cli,
   local_item_size[0] = block_size;
 
   /* setup global memory */
-  dev_n = clCreateBuffer(cli->context,  CL_MEM_READ_ONLY, mem_size, NULL, NULL);
-  dev_m = clCreateBuffer(cli->context,  CL_MEM_READ_ONLY, mem_size, NULL, NULL);
-  dev_h = clCreateBuffer(cli->context,  CL_MEM_READ_ONLY, mem_size, NULL, NULL);
+  dev_n = clCreateBuffer(cli->context,  CL_MEM_READ_WRITE, mem_size, NULL, NULL);
+  dev_m = clCreateBuffer(cli->context,	CL_MEM_READ_WRITE, mem_size, NULL, NULL);
+  dev_h = clCreateBuffer(cli->context,	CL_MEM_READ_WRITE, mem_size, NULL, NULL);
+  dev_table = clCreateBuffer(cli->context, CL_MEM_READ_WRITE, TABLE_SIZE * 6 * sizeof(FLOAT), NULL, NULL);
   dev_v = clCreateBuffer(cli->context,  CL_MEM_READ_WRITE, mem_size, NULL, NULL);
   dev_dv = clCreateBuffer(cli->context, CL_MEM_READ_WRITE, mem_size, NULL, NULL);
 
   clEnqueueWriteBuffer(cli->queue, dev_n,  CL_TRUE, 0, mem_size, host_n,  0, NULL, NULL);
   clEnqueueWriteBuffer(cli->queue, dev_m,  CL_TRUE, 0, mem_size, host_m,  0, NULL, NULL);
   clEnqueueWriteBuffer(cli->queue, dev_h,  CL_TRUE, 0, mem_size, host_h,  0, NULL, NULL);
+  clEnqueueWriteBuffer(cli->queue, dev_table,  CL_TRUE, 0, TABLE_SIZE * 6 * sizeof(FLOAT), host_table,  0, NULL, NULL);
   clEnqueueWriteBuffer(cli->queue, dev_v,  CL_TRUE, 0, mem_size, host_v,  0, NULL, NULL);
   clEnqueueWriteBuffer(cli->queue, dev_dv, CL_TRUE, 0, mem_size, host_dv, 0, NULL, NULL);
 
@@ -210,14 +215,18 @@ void opencl_hh(CLInfo *cli,
   clSetKernelArg(kernel_hh_calc, 0, sizeof(unsigned long), &datasize);
   clSetKernelArg(kernel_hh_calc, 1, sizeof(cl_mem), &dev_n);
   clSetKernelArg(kernel_hh_calc, 2, sizeof(cl_mem), &dev_m);
-  clSetKernelArg(kernel_hh_calc, 3, sizeof(cl_mem), &dev_v);
+  clSetKernelArg(kernel_hh_calc, 3, sizeof(cl_mem), &dev_h);
+  clSetKernelArg(kernel_hh_calc, 4, sizeof(cl_mem), &dev_table);
+  clSetKernelArg(kernel_hh_calc, 5, sizeof(cl_mem), &dev_v);
 
   /* execute kernel */
-  clEnqueueNDRangeKernel(cli->queue, kernel_hh_calc, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_calc);
-  clFinish(cli->queue);
-
-  /* read buffer */
-  clEnqueueReadBuffer(cli->queue, dev_v, CL_TRUE, 0, mem_size, result, 0, NULL, &ev_copy);
+  for (i=0; i<max_t/DT; i++)
+    {
+      clEnqueueNDRangeKernel(cli->queue, kernel_hh_calc, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_calc);
+      clFinish(cli->queue);
+      clEnqueueReadBuffer(cli->queue, dev_v, CL_TRUE, 0, mem_size, host_v, 0, NULL, &ev_copy);
+      result[i] = host_v[0];
+    }
 
   /* get profile */
 
@@ -226,12 +235,14 @@ void opencl_hh(CLInfo *cli,
   clReleaseMemObject(dev_n);
   clReleaseMemObject(dev_m);
   clReleaseMemObject(dev_h);
+  clReleaseMemObject(dev_table);
   clReleaseMemObject(dev_v);
   clReleaseMemObject(dev_dv);
   clReleaseKernel(kernel_hh_init);
   clReleaseKernel(kernel_hh_calc);
 }
 
+#define MAX_T 1
 
 int main(int argc, char **argv)
 {
@@ -267,8 +278,8 @@ int main(int argc, char **argv)
   hh_initialize(datasize);
   hh_makeTable();
 
-  result_host = (FLOAT *)malloc(mem_size);
-  result_opencl = (FLOAT *)malloc(mem_size);
+  result_host = (FLOAT *)malloc(MAX_T / DT * sizeof(FLOAT));
+  result_opencl = (FLOAT *)malloc(MAX_T / DT * sizeof(FLOAT));
 
 #ifdef KCOMPUTER
   fapp_start("calc", 1, 1);  
@@ -277,13 +288,17 @@ int main(int argc, char **argv)
 
   printf(" [Host Calculation]\n");
   host_start = getTime();
-  host_add(datasize, hh_n, hh_m, result_host);
-  //hh_calc(1000);
+  //host_add(datasize, hh_n, hh_m, result_host);
+  hh_calc(MAX_T, result_host);
   host_finish = getTime();
 
   printf(" [OpenCL Calculation]\n");
+
+  hh_initialize(datasize);
+  hh_makeTable();
+
   opencl_start = getTime();
-  opencl_hh(cli, datasize, hh_n, hh_m, hh_h, hh_v, hh_dv, result_opencl);
+  opencl_hh(cli, MAX_T, datasize, hh_n, hh_m, hh_h, (FLOAT *)hh_table, hh_v, hh_dv, result_opencl);
   //host_add(datasize, hh_n, hh_m, result_opencl);
   opencl_finish = getTime();
 
@@ -293,11 +308,14 @@ int main(int argc, char **argv)
 
   diff = diffArray(datasize, result_host, result_opencl);
 
+  for (i=0; i<MAX_T/DT; i++)
+    {
+      printf ("%6d %8.2f %8.2f\n", i, result_host[i], result_opencl[i]);
+    }
 
 #ifdef USE_MPI
   MPI_Finalize();
 #endif
-
 
   finalize_cl(cli);
 
@@ -305,6 +323,9 @@ int main(int argc, char **argv)
   printf ("   * Host   : %10.6f [sec]\n", host_finish - host_start);
   printf ("   * OpenCL : %10.6f [sec]\n", opencl_finish - opencl_start);
   printf ("   * Diff   : %10.2f (%s)\n", diff, (diff < 0.00001? "OK!" : "Fail"));
+
+  free(result_host);
+  free(result_opencl);
 
   return(0);
 
