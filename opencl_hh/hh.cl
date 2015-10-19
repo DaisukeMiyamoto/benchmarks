@@ -39,6 +39,7 @@ __kernel void cl_hh_init (const unsigned long datasize,
 
 
 __kernel void cl_hh_calc (const unsigned long datasize,
+			  const unsigned long i_now,
 			  __global FLOAT *data_n,
 			  __global FLOAT *data_m,
 			  __global FLOAT *data_h,
@@ -53,11 +54,10 @@ __kernel void cl_hh_calc (const unsigned long datasize,
   FLOAT theta;
   FLOAT tau_n, n_inf, tau_m, m_inf, tau_h, h_inf;
   //FLOAT hh_gk_max, hh_gna_max, hh_gm, hh_e_k, hh_e_na, hh_v_rest;
-  FLOAT i_inj = 0.0;
+  FLOAT i_inj = 10.0;
 
-  v_i = (int)(data_v[i] -TABLE_MIN_V);
+  v_i = (int)(data_v[i] - TABLE_MIN_V);
   theta = (data_v[i] - TABLE_MIN_V) - (FLOAT)v_i;
-
   if(!(v_i >= TABLE_SIZE || v_i<0) )
     {
       ;
@@ -70,6 +70,22 @@ __kernel void cl_hh_calc (const unsigned long datasize,
     {
       v_i=0; theta=0.0;
     }
+
+  const int inj_start =  50./HH_DT;
+  const int inj_stop  = 300./HH_DT;
+  const int inj2_start = 600./HH_DT;
+  const int inj2_stop  = 700./HH_DT;
+
+  /*
+  if((i_now > inj_start && i_now < inj_stop) || (i_now > inj2_start && i_now < inj2_stop))
+    {
+      i_inj = 10.0;
+    }
+  else
+    {
+      i_inj = 0.0;
+    }
+  */
 
   tau_n = TABLE_N_TAU(v_i);
   n_inf = TABLE_N_INF(v_i);

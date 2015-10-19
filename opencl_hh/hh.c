@@ -187,7 +187,7 @@ void hh_calc_step(FLOAT i_inj)
 
 FLOAT hh_set_i_inj(unsigned int i)
 {
-  FLOAT i_inj;
+  FLOAT i_inj=0.0;
   const int inj_start =  50./DT;
   const int inj_stop  = 300./DT;
   const int inj2_start = 600./DT;
@@ -199,22 +199,32 @@ FLOAT hh_set_i_inj(unsigned int i)
     }
   else
     {
-      i_inj = 0.0;
+      i_inj = 10.0;
     }
   return(i_inj);
+}
+
+void hh_save_result(unsigned int i_max, char *filename, FLOAT *result)
+{
+  int i;
+  char *header = "# Hodgkin-Huxley Benchmark for OpenCL\n"\
+    "# nebula (20151010)\n"\
+    "# t , i_inj [nA], V [mV]\n";
+
+  FILE *fp;
+  fp = fopen(filename, "w");
+  fprintf(fp, "%s", header);
+
+  for(i=0; i<i_max; i++)
+    {
+      fprintf (fp, "%f, %f, %f\n", i*DT, hh_set_i_inj(i), result[i]);
+    }
+  fclose(fp);
 }
 
 int hh_calc(FLOAT stoptime, FLOAT *result)
 {
   unsigned int i, i_stop;
-  char *header = "# Hodgkin-Huxley Benchmark for OpenCL\n"\
-    "# nebula (20151010)\n"\
-    "# t , i_inj [nA], V [mV]\n";
-
-#ifdef SAVE_RESULT
-  FILE *fp;
-  fp = fopen("result.txt", "w");
-#endif
 
   for(i=0,i_stop=stoptime/DT; i<i_stop; i++)
     {
@@ -224,14 +234,7 @@ int hh_calc(FLOAT stoptime, FLOAT *result)
 
       result[i] = hh_v[0];
       
-#ifdef SAVE_RESULT
-      fprintf (fp, "%f, %f, %f\n", i*DT, i_inj, hh_v[0]);
-#endif
     }
-
-#ifdef SAVE_RESULT
-  fclose(fp);
-#endif
 
   return(0);
 }

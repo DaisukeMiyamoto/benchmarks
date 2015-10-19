@@ -17,13 +17,14 @@ typedef double FLOAT;
 //#define PRINT_RESULT 1
 #define SAVE_RESULT 1
 
-#define N_COMPARTMENT 1000
+#define N_COMPARTMENT 4000
 static const FLOAT DT = 0.025;        // [msec]
 static const FLOAT CELSIUS = 6.3;     // [degC]
 
 // functions
 void hh_initialize(unsigned long n_compartment);
 void hh_makeTable();
+void hh_save_result(unsigned int i_max, char *filename, FLOAT *result);
 int  hh_calc(FLOAT stoptime, FLOAT *result);
 
 
@@ -37,6 +38,9 @@ extern FLOAT hh_h[N_COMPARTMENT];
 #define TABLE_SIZE 201
 #define TABLE_MAX_V 100.0f
 #define TABLE_MIN_V -100.0f
+
+
+#define TABLE_TYPE 1
 
 #ifdef TABLE_TYPE
 extern FLOAT hh_table[TABLE_SIZE][6];
