@@ -161,6 +161,77 @@ void host_add(const unsigned long datasize, const double *data1, const double *d
     }
 }
 
+void opencl_hh(CLInfo *cli,
+	       const unsigned long datasize,
+	       const FLOAT *host_n,
+	       const FLOAT *host_m,
+	       const FLOAT *host_h,
+	       FLOAT *host_v,
+	       FLOAT *host_dv,
+	       FLOAT *result)
+{
+  size_t global_item_size[3]={1, 1, 1}, local_item_size[3]={1, 1, 1};
+
+  cl_mem dev_n, dev_m, dev_h, dev_v, dev_dv;
+
+  cl_kernel kernel_hh_init, kernel_hh_calc;
+
+  cl_event ev_calc, ev_copy;
+  double calc_time, copy_time;
+  cl_ulong prof_start, prof_calc_end, prof_copy_end;
+
+  cl_int ret;
+
+  size_t mem_size = datasize * sizeof(FLOAT);
+  cl_uint block_size;
+  block_size = cli->num_compute_unit*32;
+
+  kernel_hh_init = clCreateKernel(cli->program, "cl_hh_init", NULL);
+  kernel_hh_calc = clCreateKernel(cli->program, "cl_hh_calc", NULL);
+
+  /* setup item size */
+  global_item_size[0] = (unsigned long)ceil((double)datasize / block_size) * block_size;
+  local_item_size[0] = block_size;
+
+  /* setup global memory */
+  dev_n = clCreateBuffer(cli->context,  CL_MEM_READ_ONLY, mem_size, NULL, NULL);
+  dev_m = clCreateBuffer(cli->context,  CL_MEM_READ_ONLY, mem_size, NULL, NULL);
+  dev_h = clCreateBuffer(cli->context,  CL_MEM_READ_ONLY, mem_size, NULL, NULL);
+  dev_v = clCreateBuffer(cli->context,  CL_MEM_READ_WRITE, mem_size, NULL, NULL);
+  dev_dv = clCreateBuffer(cli->context, CL_MEM_READ_WRITE, mem_size, NULL, NULL);
+
+  clEnqueueWriteBuffer(cli->queue, dev_n,  CL_TRUE, 0, mem_size, host_n,  0, NULL, NULL);
+  clEnqueueWriteBuffer(cli->queue, dev_m,  CL_TRUE, 0, mem_size, host_m,  0, NULL, NULL);
+  clEnqueueWriteBuffer(cli->queue, dev_h,  CL_TRUE, 0, mem_size, host_h,  0, NULL, NULL);
+  clEnqueueWriteBuffer(cli->queue, dev_v,  CL_TRUE, 0, mem_size, host_v,  0, NULL, NULL);
+  clEnqueueWriteBuffer(cli->queue, dev_dv, CL_TRUE, 0, mem_size, host_dv, 0, NULL, NULL);
+
+  /* setup arguments */
+  clSetKernelArg(kernel_hh_calc, 0, sizeof(unsigned long), &datasize);
+  clSetKernelArg(kernel_hh_calc, 1, sizeof(cl_mem), &dev_n);
+  clSetKernelArg(kernel_hh_calc, 2, sizeof(cl_mem), &dev_m);
+  clSetKernelArg(kernel_hh_calc, 3, sizeof(cl_mem), &dev_v);
+
+  /* execute kernel */
+  clEnqueueNDRangeKernel(cli->queue, kernel_hh_calc, 1, NULL, global_item_size, local_item_size, 0, NULL, &ev_calc);
+  clFinish(cli->queue);
+
+  /* read buffer */
+  clEnqueueReadBuffer(cli->queue, dev_v, CL_TRUE, 0, mem_size, result, 0, NULL, &ev_copy);
+
+  /* get profile */
+
+
+  /* finalize */
+  clReleaseMemObject(dev_n);
+  clReleaseMemObject(dev_m);
+  clReleaseMemObject(dev_h);
+  clReleaseMemObject(dev_v);
+  clReleaseMemObject(dev_dv);
+  clReleaseKernel(kernel_hh_init);
+  clReleaseKernel(kernel_hh_calc);
+}
+
 
 int main(int argc, char **argv)
 {
@@ -169,6 +240,9 @@ int main(int argc, char **argv)
   double diff;
   unsigned long datasize = N_COMPARTMENT;
   size_t mem_size = datasize * sizeof(double);
+
+  CLInfo _cli;
+  cli = &_cli;
 
   FLOAT *result_host;
   FLOAT *result_opencl;
@@ -181,6 +255,14 @@ int main(int argc, char **argv)
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 #endif
+
+  init_cl(cli, "hh.cl");
+  if (cli->state != 1)
+    {
+      printf ("No device found.\n");
+      exit(-1);
+    }
+  print_cl_info(cli);
 
   hh_initialize(datasize);
   hh_makeTable();
@@ -195,32 +277,29 @@ int main(int argc, char **argv)
 
   printf(" [Host Calculation]\n");
   host_start = getTime();
-  //host_add(datasize, hh_n, hh_m, result_host);
-  hh_calc(1000);
+  host_add(datasize, hh_n, hh_m, result_host);
+  //hh_calc(1000);
   host_finish = getTime();
 
   printf(" [OpenCL Calculation]\n");
   opencl_start = getTime();
-  host_add(datasize, hh_n, hh_m, result_opencl);
+  opencl_hh(cli, datasize, hh_n, hh_m, hh_h, hh_v, hh_dv, result_opencl);
+  //host_add(datasize, hh_n, hh_m, result_opencl);
   opencl_finish = getTime();
 
 #ifdef KCOMPUTER
   fapp_stop("calc", 1, 1);
 #endif
 
-  /*
-    for (i=0; i<datasize; i++)
-    {
-    printf("%f + %f = %f, %f\n", hh_n[i], hh_m[i], result_host[i], result_opencl[i]);
-    }
-  */
-  
   diff = diffArray(datasize, result_host, result_opencl);
 
 
 #ifdef USE_MPI
   MPI_Finalize();
 #endif
+
+
+  finalize_cl(cli);
 
   printf (" [Result]\n");
   printf ("   * Host   : %10.6f [sec]\n", host_finish - host_start);
