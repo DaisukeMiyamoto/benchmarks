@@ -1,6 +1,9 @@
 # for K
 *.sh.*
 *~
+result.txt
+result_host.txt
+result_opencl.txt
 
 # Object files
 *.o
